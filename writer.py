@@ -78,15 +78,27 @@ def create_content_page(title, cover_file_name, author, spine, metadata={}):
     extrameta = "\n".join(meta_lines)
     
     # Throw together the manifest and spine
+    
+    manifest_lines = []
+    
     covertype = cover_file_name.split(".")[-1]
-    manifest = manifest_template.format(cover_file_name, "cover", "image/"+covertype)
+    cover_text = manifest_template.format(
+        cover_file_name, "cover", "image/"+covertype)
+    manifest_lines.append(cover)
+    
     spine_lines = []
     splat = author.split(" ")
     authorformat = splat[-1]+","+" ".join(splat[:-1])
     for num, item in enumerate(spine):
-        manifest += "\n" + manifest_template.format(item, num, "text/html")
+        manifest_lines.append(
+            manifest_template.format(item, num, "application/xhtml+xml"))
         spine_lines.append(spine_template.format(num))
+    
+    toc_text = mainfest_template.format(
+        "toc.ncx", "ncx", "application/x-dtbncx+xml")
+    
     spine_text = "\n".join(spine_lines)
+    manifest = "\n".join(manifest_lines)
     
     # Format everything :D
     content_template = quick_load(CONTENT_TEMPLATE_FILE)
@@ -174,12 +186,20 @@ class EpubWriter:
         """Compiles a .ncx table of content for the ePub"""
         toc_template = quick_load(TOC_TEMPLATE_FILE)
         nav_point_template = quick_load(TOC_NAV_POINT_TEMPLATE_FILE)
+        nav_points = []
+        for num, chapter in enumerate(self.source.index[1:], 1):
+            nav_points.append(nav_point_template.format_map({
+                "number": num,
+                "chapter": chapter.rsplit(".", 1)[0],
+                "chapter_file": chapter,
+            }))
         text = toc_template.format_map({
             "title": self.source.title,
-            "nav_points": nav_points_text,
+            "nav_points": "\n".join(nav_points),
         })
         self.file.writestr(TOC_FILENAME, text)
-    
+        print("- Compiled table of contents")
+        
     
     def compile_meta(self):
         """Adds the META-INF pointer file"""
@@ -193,4 +213,5 @@ class EpubWriter:
         self.compile_title_page()
         self.compile_index()
         self.compile_meta()
+        self.compile_toc()
         self.file.close()

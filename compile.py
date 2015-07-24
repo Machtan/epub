@@ -87,7 +87,7 @@ def split_and_compile(source_text, chapter_name):
             line_started = True
 
         template = quick_load("markdown.tpl")
-        html = template.format("\n".join(lines))
+        html = template.format_map({"text": "\n".join(lines)})
         yield (name, html)
         after_first_chapter = True
 

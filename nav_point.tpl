@@ -1,4 +1,4 @@
-    <navPoint class="chapter" id="navpoint-1" playOrder="1">
+    <navPoint class="chapter" id="navpoint-{number}" playOrder="{number}">
       <navLabel>
         <text>{chapter}</text>
       </navLabel>
