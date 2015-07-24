@@ -24,7 +24,7 @@ def compile_epub(title, author, cover_type, cover_bytes, chapters, images={}, pa
 
     print("Compiling epub...")
     with Epub(
-            title, author, target_path, cover_type, cover_bytes, 
+            title, author, path, cover_type, cover_bytes, 
             metadata=metadata) as epub:
         
         epub.add_cover(cover_type, cover_bytes)
@@ -133,30 +133,30 @@ def iter_load_images(images, image_folders=[]):
     raise StopIteration
 
 
-def compile_epub_from_spec(spec_dict, directory, target_path=None, source_is_html=False):
+def compile_epub_from_specification(spec_dict, directory, target_path=None, source_is_html=False):
     """# Compiles an ebook in the ePub format from the given specification file
-    # =====================================
-    # Example of a specfile of an ePub book
-    # =====================================
+    # =============================================================
+    # Example of a specification file for a book in the ePub format
+    # =============================================================
 
     # Specification file for the compilation of an epub
 
-    title 		 = "Arifureta Shokugyou de Sekai Saikyou - Vol 1"
-    author 		 = "Chuuni Suki"
-    cover_file 	 = "Arifureta.png"
-    source_files = ["Arifureta vol1.txt",]
+    title 		 = "Test book"
+    author 		 = "Jakob Lautrup Nysom"
+    cover_file 	 = "test_cover.png"
+    source_files = ["test_source.md",]
 
     # Optional
     language	= "en"
-    series		= "Arifureta"
+    series		= "Test series"
     volume		= 1
-    tags		= ["Web Novel", "MMORPG", "Fantasy", "Japanese"]
-    source		= "www.japtem.com"
-    description_file = "Arifureta description.txt"
+    tags		= ["Horror", "Heartwarming", "Random",]
+    description = "A book about the horrors related to testing of computer programs"
+
+    # image_folders = ["folder_with_lots_of_images_to_include_automatically",]
 
     [image_files]
-    #image1 = "/home/images/arifureta-image1.png"
-
+    image1 = "test_cover.png"
     """
     # Ensure that this can be done!
     validate_spec(spec_dict, directory)
@@ -188,9 +188,9 @@ def compile_epub_from_spec(spec_dict, directory, target_path=None, source_is_htm
         image_folders=spec_dict.get("image_folders", []))
     
     
-    compile_epub_with_items(
+    compile_epub(
         title, author, cover_type, cover_bytes, chapters, images=images, 
         path=target_path, metadata=spec_dict)
     
 if __name__ == '__main__':
-    print(create_content_page("derp", "hello.png", "world", ["a", "b"], {"description": "Some Crap I Found"}))
+    pass

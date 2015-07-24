@@ -6,7 +6,7 @@ import os
 import sys
 import friendlytoml as toml
 from argparse import ArgumentParser
-from compile import compile_epub_from_spec
+from compile import compile_epub_from_specification
 
 def main(args=sys.argv[1:]):
     """Entry point"""
@@ -38,7 +38,7 @@ def main(args=sys.argv[1:]):
 
     directory = os.path.dirname(os.path.abspath(spec_file))
 
-    compile_epub_from_spec(
+    compile_epub_from_specification(
         spec, directory, target_path=parsed.target_path,
         source_is_html=parsed.assume_html)
 

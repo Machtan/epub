@@ -141,7 +141,7 @@ class EpubWriter:
         self.source.cover_name = cover_name
         print("- Added cover")
     
-    def compile_title_page(self, cover_path, spine, zfile):
+    def compile_title_page(self):
         """Compiles the title page for the ePub"""
         if self.source.cover_bytes:
             title_content = create_title_page(self.source.cover_name, self.source.cover_bytes)
