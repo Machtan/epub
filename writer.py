@@ -3,6 +3,7 @@
 """Classes and utilities for writing to ePub files"""
 import os
 import zipfile
+import io
 from PIL import Image
 
 
@@ -99,7 +100,7 @@ def create_content_page(title, cover_file_name, author, spine, metadata={}):
 def create_title_page(cover_name, cover_bytes):
     """Creates a html title page based on the given cover image"""
     template = quick_load(TITLE_TEMPLATE_FILE)
-    image = PIL.Image.from_bytes(image_bytes)
+    image = Image.open(io.BytesIO(cover_bytes))
     w, h = image.size
     return template.format(w, h, cover_name)
 
@@ -121,8 +122,8 @@ class EpubWriter:
     def add_chapter(self, title, text):
         """Adds a chapter to the ePub"""
         self.file.writestr(title, text)
-        self.source.index.append(chapter_name)
-        print("--- Added {!r}".format(chapter_name))
+        self.source.index.append(title)
+        print("- Added {!r}".format(title))
     
     def add_image(self, image_name, image_bytes):
         """Adds the given image to the ePub"""
@@ -133,7 +134,6 @@ class EpubWriter:
     
     def add_cover(self, image_type, image_bytes):
         """Uses the given binary image data as the cover for the ePub"""
-        base_cover = os.path.basename(cover_path)
         image_type = image_type.replace(".", "")  # Ensure proper endings (/bad memory)
         cover_name = "cover.{}".format(image_type)
         self.add_image(cover_name, image_bytes)
@@ -144,16 +144,17 @@ class EpubWriter:
     def compile_title_page(self):
         """Compiles the title page for the ePub"""
         if self.source.cover_bytes:
-            title_content = create_title_page(self.source.cover_name, self.source.cover_bytes)
-            zfile.writestr(TITLE_FILENAME, title_content)
-            if self.source.index[0] != TITLE_FILENAME:
+            title_content = create_title_page(
+                self.source.cover_name, self.source.cover_bytes)
+            self.file.writestr(TITLE_FILENAME, title_content)
+            if (not self.source.index) or self.source.index[0] != TITLE_FILENAME:
                 self.source.index.insert(0, TITLE_FILENAME)
         print("- Compiled title page")
     
     def compile_index(self):
         """Compiles the index file for the ePub"""
-        content = create_content_file(
-            self.source.title, self.source.cover_file_name, self.source.author, 
+        content = create_content_page(
+            self.source.title, self.source.cover_name, self.source.author, 
             self.source.index, self.source.metadata)
         self.file.writestr(CONTENT_FILENAME, content)
         print("- Compiled index file")

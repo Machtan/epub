@@ -35,7 +35,7 @@ def compile_epub(title, author, cover_type, cover_bytes, chapters, images={}, pa
             epub.add_image(name, image_bytes)
 
     print("Done!")
-    print("Saved ePub to {!r}".format(target_path))
+    print("Saved ePub to {!r}".format(path))
 
 # Make images downloaded through a Danish firefox version point locally
 _pattern = re.compile(r'"[^"]*?-filer\/(.*?)"')
@@ -53,7 +53,7 @@ def split_and_compile(source_text, chapter_name):
     after_first_chapter = False
     for num, text in enumerate(source_text.split("\n# ")):
         name = "{}_split-{}.html".format(chapter_name, num)
-        print("- Writing '{}'".format(name))
+        #print("- Writing '{}'".format(name))
         lines = []
 
         line_started = False
@@ -106,6 +106,7 @@ def iter_load_chapters(source_paths, source_is_html):
             text = clean_html(source_text)
             yield (chapter_name, text)
     raise StopIteration
+
 
 def iter_load_images(images, image_folders=[]):
     """Loads and iterates over the images from the images and image folders 
