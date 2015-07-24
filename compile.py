@@ -13,12 +13,13 @@ from spec_validator import validate_spec
 from epub import Epub
 
 
-def compile_epub(title, author, cover_type, cover_bytes, chapters, images={}, path=None, metadata={}):
+def compile_epub(title, author, cover_type, cover_bytes, chapters, images=[], path=None, metadata={}):
     """Compiles an ePub from the given arguments.
     The path is where the ePub should be saved to 
     (or with a default name in the current direcory).
-    The chapters should be a list of (title, chapter_text) pairs.
-    The images should be a dict of {file name in the zip archive : bytes} pairs"""
+    The chapters should be an iterable of (title, chapter_text) pairs.
+    The images should be an iterable of (file name in the zip archive, bytes} 
+    pairs"""
     if not path:
         path = title + " - " + author + ".epub"
 

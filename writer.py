@@ -123,7 +123,7 @@ class EpubWriter:
         """Adds a chapter to the ePub"""
         self.file.writestr(title, text)
         self.source.index.append(title)
-        print("- Added {!r}".format(title))
+        print("- Chapter added: {!r}".format(title))
     
     def add_image(self, image_name, image_bytes):
         """Adds the given image to the ePub"""
@@ -131,6 +131,7 @@ class EpubWriter:
             raise Exception("Image bytes should be 'bytes' not a {}".format(
                 type(image_bytes)))
         self.file.writestr(image_name, image_bytes)
+        print("- Image added: {!r}".format(image_name))
     
     def add_cover(self, image_type, image_bytes):
         """Uses the given binary image data as the cover for the ePub"""

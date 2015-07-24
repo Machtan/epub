@@ -19,56 +19,49 @@ def get_image_size(imagepath):
     return img.size
 
 
-def create_epub_from_images(title, *images, author=DEFAULT_AUTHOR):
+def create_epub_from_images(title, *image_paths, author=DEFAULT_AUTHOR):
     """Creates an ePub from the given list of image files"""
-    if not images:
+    if not image_paths:
         raise Exception("No images provided!")
     
     with open("title.tpl") as f:
-        page_template = f.read()
+        chapter_template = f.read()
     
-    image_files = {}
-    for i, image_path in enumerate(images):
-        try:
-            width, height = get_image_size(image_path)
-        except OSError:
-            print("Error reading image: {!r}".format(image_path))
-            continue
-        base = os.path.basename(image_path).rsplit(".", 1)[0].replace(".", "_")
-        name = base
-        num = 1
-        while base in image_files:  # Rename on conflict
-            base = name + str(num)
-            num += 1
-
-        print("Adding {:04}: {!r}".format(i, base))
-        image_files[base] = os.path.abspath(image_path)
-        content = page_template.format(width, height, base)
-        if image_files:  # After the first one
-            source_file.write("<!--\n# -->")  # Split signal
-        source_file.write(content)
-
-
-    specs = {
-        "title": title,
-        "author": author,
-        "cover_file": os.path.abspath(images[0]),
-        "source_files": [source_file.name],
-        "image_files": image_files
+    def iter_images():
+        """Iterates over the images and returns their name and bytes"""
+        for image_path in image_paths:
+            name = os.path.basename(image_path)
+            with open(image_path, "rb") as f:
+                contents = f.read()
+            yield (name, contents)
+        raise StopIteration
+    
+    def iter_chapters():
+        """Iterates over the images and creates chapters pointing to the images"""
+        for image_path in image_paths:
+            name = os.path.basename(image_path)
+            title = name.rsplit(".")[0]
+            try:
+                width, height = get_image_size(image_path)
+            except OSError:
+                print("Error reading image: {!r}".format(image_path))
+                continue
+            yield (title, chapter_template.format(width, height, name))
+        raise StopIteration
+    
+    cover_path = image_paths[0]
+    cover_type = cover_path.rsplit(".")[-1]
+    with open(cover_path, "rb") as f:
+        cover_bytes = f.read()
+        
+    metadata = {
+        "tags": ["Image compilation"]
     }
-    print("Specs:")
-    toml.dump(specs)
-    source_file.close()
-    print("\n\n")
-    print("=" * 60)
-    print("Source:")
-    # The directory doesn't matter with absolute paths
-    directory = os.getcwd()
 
-    compile_epub(specs, directory)
+    compile_epub(
+        title, author, cover_type, cover_bytes, iter_chapters(), 
+        images=iter_images(), path=None, metadata=metadata})
 
-    os.remove(source_file.name)
-    print("source_file exists: {}".format(os.path.exists(source_file.name)))
 
 def create_epub_from_folder(folder):
     """Creates an ePub from the image files contained in the given folder"""
