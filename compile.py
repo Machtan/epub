@@ -13,7 +13,7 @@ from spec_validator import validate_spec
 from epub import Epub
 
 
-def compile_epub_with_items(title, author, cover_type, cover_bytes, chapters, images={}, path=None, metadata={}):
+def compile_epub(title, author, cover_type, cover_bytes, chapters, images={}, path=None, metadata={}):
     """Compiles an ePub from the given arguments.
     The path is where the ePub should be saved to 
     (or with a default name in the current direcory).
@@ -36,32 +36,6 @@ def compile_epub_with_items(title, author, cover_type, cover_bytes, chapters, im
 
     print("Done!")
     print("Saved ePub to {!r}".format(target_path))
-
-
-"""
-# =========================================
-# Example of a specfile for the commandline
-# =========================================
-
-# Specification file for the compilation of an epub
-
-title 		 = "Arifureta Shokugyou de Sekai Saikyou - Vol 1"
-author 		 = "Chuuni Suki"
-cover_file 	 = "Arifureta.png"
-source_files = ["Arifureta vol1.txt",]
-
-# Optional
-language	= "en"
-series		= "Arifureta"
-volume		= 1
-tags		= ["Web Novel", "MMORPG", "Fantasy", "Japanese"]
-source		= "www.japtem.com"
-description_file = "Arifureta description.txt"
-
-[image_files]
-#image1 = "/home/images/arifureta-image1.png"
-
-"""
 
 # Make images downloaded through a Danish firefox version point locally
 _pattern = re.compile(r'"[^"]*?-filer\/(.*?)"')
@@ -116,8 +90,8 @@ def load_source_text(path):
         return str(source, encoding=encoding)
 
 
-def load_chapters(source_paths, source_is_html):
-    """Returns the chapter tuples from loading the given text source paths.
+def iter_load_chapters(source_paths, source_is_html):
+    """Yields the chapter tuples from loading the given text source paths.
     source_is_html toggles whether to interpret the text contents as html 
     or compile from them as markdown"""
     for path in source_paths:
@@ -133,9 +107,57 @@ def load_chapters(source_paths, source_is_html):
             yield (chapter_name, text)
     raise StopIteration
 
+def iter_load_images(images, image_folders=[]):
+    """Loads and iterates over the images from the images and image folders 
+    parts of the ePub specification file"""
+    endings = (".png", ".jpg", ".jpeg", ".svg", ".bmp", ".gif")
+    def is_image(name):
+        return (not name.startswith(".")) and name.lower().endswith(endings)
+    
+    for image, path in images.items():
+        with open(path, "rb") as f:
+            contents = f.read()
+        yield (image, contents)
+        
+    for folder in image_folders:
+        for dirpath, _, filenames in os.walk(folder):
+            for filename in (f for f in filenames if is_image(f)):
+                if filename not in images:
+                    filepath = os.path.abspath(os.path.join(dirpath, filename))
+                    with open(filepath, "rb") as f:
+                        contents = f.read()
+                    yield (image, contents)
+                else:
+                    print("! Duplicate image found: {!r}".format(filename))
+    
+    raise StopIteration
 
-def compile_epub(spec_dict, directory, target_path=None, source_is_html=False):
-    """Compiles an ebook in the epub format from the given specification file"""
+
+def compile_epub_from_spec(spec_dict, directory, target_path=None, source_is_html=False):
+    """# Compiles an ebook in the ePub format from the given specification file
+    # =====================================
+    # Example of a specfile of an ePub book
+    # =====================================
+
+    # Specification file for the compilation of an epub
+
+    title 		 = "Arifureta Shokugyou de Sekai Saikyou - Vol 1"
+    author 		 = "Chuuni Suki"
+    cover_file 	 = "Arifureta.png"
+    source_files = ["Arifureta vol1.txt",]
+
+    # Optional
+    language	= "en"
+    series		= "Arifureta"
+    volume		= 1
+    tags		= ["Web Novel", "MMORPG", "Fantasy", "Japanese"]
+    source		= "www.japtem.com"
+    description_file = "Arifureta description.txt"
+
+    [image_files]
+    #image1 = "/home/images/arifureta-image1.png"
+
+    """
     # Ensure that this can be done!
     validate_spec(spec_dict, directory)
 
@@ -156,24 +178,15 @@ def compile_epub(spec_dict, directory, target_path=None, source_is_html=False):
         cover_bytes = f.read()
     
     # Chapters
-    source_paths = [get_local_to_spec(f) for f in spec_dict['source_files']]
-    chapters = load_chapters(source_paths, source_is_html)
+    chapters = iter_load_chapters(
+        (get_local_to_spec(f) for f in spec_dict['source_files']), 
+        source_is_html)
     
     # Images
-    images = spec_dict.get("image_files", {})
+    images = iter_load_images(
+        spec_dict.get("image_files", {}), 
+        image_folders=spec_dict.get("image_folders", []))
     
-    endings = (".png", ".jpg", ".jpeg", ".svg", ".bmp", ".gif")
-    def is_image(name):
-        return (not name.startswith(".")) and name.lower().endswith(endings)
-    
-    for folder in spec_dict.get("image_folders", []):
-        for dirpath, _, filenames in os.walk(folder):
-            for filename in (f for f in filenames if is_image(f)):
-                if filename not in images:
-                    filepath = os.path.abspath(os.path.join(dirpath, filename))
-                    images[filename] = filepath
-                else:
-                    print("! Duplicate image found: {!r}".format(filename))
     
     compile_epub_with_items(
         title, author, cover_type, cover_bytes, chapters, images=images, 

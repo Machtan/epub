@@ -4,9 +4,9 @@
 """Command-line utility for the ePub compilation library"""
 import os
 import sys
-import toml
+import friendlytoml as toml
 from argparse import ArgumentParser
-from compile import compile_epub
+from compile import compile_epub_from_spec
 
 def main(args=sys.argv[1:]):
     """Entry point"""
@@ -38,8 +38,8 @@ def main(args=sys.argv[1:]):
 
     directory = os.path.dirname(os.path.abspath(spec_file))
 
-    compile_epub(
-        spec, directory, parsed.target_path,
+    compile_epub_from_spec(
+        spec, directory, target_path=parsed.target_path,
         source_is_html=parsed.assume_html)
 
 

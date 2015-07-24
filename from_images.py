@@ -23,10 +23,10 @@ def create_epub_from_images(title, *images, author=DEFAULT_AUTHOR):
     """Creates an ePub from the given list of image files"""
     if not images:
         raise Exception("No images provided!")
-    with open("image_page.tpl") as f:
+    
+    with open("title.tpl") as f:
         page_template = f.read()
-    source_file = tempfile.NamedTemporaryFile("w", delete=False)
-    "write the source text for the image stuff"
+    
     image_files = {}
     for i, image_path in enumerate(images):
         try:
