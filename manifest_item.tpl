@@ -1,1 +1,1 @@
-    <item href='{url}' id='{id}' media-type='{media_type}'/>
+      <item href='{url}' id='{id}' media-type='{media_type}'/>

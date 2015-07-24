@@ -17,8 +17,8 @@ def compile_epub(title, author, cover_type, cover_bytes, chapters, images=[], pa
     """Compiles an ePub from the given arguments.
     The path is where the ePub should be saved to 
     (or with a default name in the current direcory).
-    The chapters should be an iterable of (title, chapter_text) pairs.
-    The images should be an iterable of (file name in the zip archive, bytes} 
+    The chapters should be an iterable of (title, filename, chapter_text) pairs.
+    The images should be an iterable of (title, filename, bytes) pairs
     pairs"""
     if not path:
         path = title + " - " + author + ".epub"
@@ -29,11 +29,11 @@ def compile_epub(title, author, cover_type, cover_bytes, chapters, images=[], pa
             metadata=metadata) as epub:
         
         epub.add_cover(cover_type, cover_bytes)
-        for (title, text) in chapters:
-            epub.add_chapter(title, text)
+        for (local_name, filename, text) in chapters:
+            epub.add_chapter(local_name, filename, text)
             
-        for (name, image_bytes) in images:
-            epub.add_image(name, image_bytes)
+        for (local_name, filename, image_bytes) in images:
+            epub.add_image(local_name, filename, image_bytes)
 
     print("Done!")
     print("Saved ePub to {!r}".format(path))
@@ -60,15 +60,17 @@ def clean_html(html):
     return _pattern.sub(_replacer, html)
 
 
-def split_and_compile(source_text, chapter_name):
+def split_and_compile(source_text):
     """Splits the source text into chapters and compiles each to html from
     markdown. Returns a list of (filename, content), and the list of these
     filenames"""
     # All this splitting makes it slow :c
     after_first_chapter = False
-    for num, text in enumerate(source_text.split("\n# ")):
-        name = "{}-{}.html".format(chapter_name, num)
-        #print("- Writing '{}'".format(name))
+    for num, text in enumerate(source_text.split("\n# "), 1):
+        # Use the first line (minus the markdown header marker) as the title
+        start = 2 if text.startswith("# ") else 0
+        chapter_name = text[start : text.find("\n")]
+        name = "{}.html".format(chapter_name)
         lines = []
 
         line_started = False
@@ -88,7 +90,7 @@ def split_and_compile(source_text, chapter_name):
 
         template = quick_load("markdown.tpl")
         html = template.format_map({"text": "\n".join(lines)})
-        yield (name, html)
+        yield (chapter_name, name, html)
         after_first_chapter = True
 
     raise StopIteration
@@ -105,21 +107,21 @@ def load_source_text(path):
         return str(source, encoding=encoding)
 
 
-def iter_load_chapters(source_paths, source_is_html):
+def iter_load_chapters(source_paths):
     """Yields the chapter tuples from loading the given text source paths.
     source_is_html toggles whether to interpret the text contents as html 
     or compile from them as markdown"""
     for path in source_paths:
         source_text = load_source_text(path)
-        text_is_html = 
-        chapter_name = os.path.basename(path).rsplit(".", 1)[0]
+        base = os.path.basename(path)
+        name = base.rsplit(".", 1)[0]
         if path.endswith((".html", ".xhtml")):
             text = clean_html(source_text)
-            yield (chapter_name, text)
+            yield (name, base, text)
         elif path.endswith(".md"):
-            yield from split_and_compile(source_text, chapter_name)
+            yield from split_and_compile(source_text)
         else:
-            yield (chapter_name, text)
+            yield (name, base, source_text)
 
     raise StopIteration
 
@@ -131,19 +133,21 @@ def iter_load_images(images, image_folders=[]):
     def is_image(name):
         return (not name.startswith(".")) and name.lower().endswith(endings)
     
-    for image, path in images.items():
+    for name, path in images.items():
+        filename = os.path.basename(path)
         with open(path, "rb") as f:
             contents = f.read()
-        yield (image, contents)
+        yield (name, filename, contents)
         
     for folder in image_folders:
         for dirpath, _, filenames in os.walk(folder):
             for filename in (f for f in filenames if is_image(f)):
                 if filename not in images:
                     filepath = os.path.abspath(os.path.join(dirpath, filename))
+                    name = filename.rsplit(".", 1)[0]
                     with open(filepath, "rb") as f:
                         contents = f.read()
-                    yield (image, contents)
+                    yield (name, filename, contents)
                 else:
                     print("! Duplicate image found: {!r}".format(filename))
     
@@ -195,9 +199,8 @@ def compile_epub_from_specification(spec_dict, directory, target_path=None):
         cover_bytes = f.read()
     
     # Chapters
-    chapters = iter_load_chapters(
-        (get_local_to_spec(f) for f in spec_dict['source_files']), 
-        source_is_html)
+    files = (get_local_to_spec(f) for f in spec_dict['source_files'])
+    chapters = iter_load_chapters(files)
     
     # Images
     images = iter_load_images(

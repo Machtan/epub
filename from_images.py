@@ -27,27 +27,33 @@ def create_epub_from_images(title, *image_paths, author=DEFAULT_AUTHOR):
     with open("title.tpl") as f:
         chapter_template = f.read()
     
+    
     def iter_images():
         """Iterates over the images and returns their name and bytes"""
         for image_path in image_paths:
-            name = os.path.basename(image_path)
+            filename = os.path.basename(image_path)
+            name = filename.rsplit(".", 1)[0]
             with open(image_path, "rb") as f:
                 contents = f.read()
-            yield (name, contents)
+            yield (name, filename, contents)
         raise StopIteration
+    
     
     def iter_chapters():
         """Iterates over the images and creates chapters pointing to the images"""
         for image_path in image_paths:
-            name = os.path.basename(image_path)
-            title = name.rsplit(".", 1)[0]
+            filename = os.path.basename(image_path)
+            title = filename.rsplit(".", 1)[0]
             try:
                 width, height = get_image_size(image_path)
             except OSError:
                 print("Error reading image: {!r}".format(image_path))
                 continue
-            yield (title, chapter_template.format(width, height, name))
+                
+            yield (title, filename, chapter_template.format(width, height, name))
+        
         raise StopIteration
+    
     
     cover_path = image_paths[0]
     cover_type = cover_path.rsplit(".")[-1]

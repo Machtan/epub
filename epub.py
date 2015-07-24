@@ -9,19 +9,19 @@ class Epub:
     """An EPub file"""
     def __init__(
             self, title, author, path, cover_type=None, cover_bytes=bytes(), 
-            index=[], images=set(), metadata={}):
+            chapters=[], images=set(), metadata={}):
         """Creates a new ePub with the given parameters. Use 'load' for existing files."""
         self.path = path
         self.title = title
         self.author = author
-        self.index = index
-        self.images = images
+        self.chapters = chapters # [(local_id, file)]
+        self.images = images # [(local_id, file)]
         self.cover_bytes = cover_bytes
         self.metadata = metadata
         if cover_type:
-            self.cover_name = "cover.{}".format(cover_type.replace(".", ""))
+            self.cover_file = "cover.{}".format(cover_type.replace(".", ""))
         else:
-            self.cover_name = "ERROR: DEFAULT COVER NAME NOT CHANGED"
+            self.cover_file = "ERROR: DEFAULT COVER NAME NOT CHANGED"
     
     @not_implemented
     def load(self, path):

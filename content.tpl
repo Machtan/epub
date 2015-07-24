@@ -8,10 +8,10 @@
         {extrameta}
     </metadata>
     <manifest>
-        {manifest}
+{manifest}
     </manifest>
     <spine toc="ncx">
-        {spine}
+{spine}
     </spine>
     <guide>
         <reference href="{cover}" type="cover" title="Cover"/>

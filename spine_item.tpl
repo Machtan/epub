@@ -1,1 +1,1 @@
-    <itemref idref='{id}'/>
+      <itemref idref='{id}'/>
