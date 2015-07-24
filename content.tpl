@@ -10,7 +10,7 @@
     <manifest>
         {manifest}
     </manifest>
-    <spine>
+    <spine toc="ncx">
         {spine}
     </spine>
     <guide>

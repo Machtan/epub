@@ -11,10 +11,14 @@ from PIL import Image
 TITLE_FILENAME = "titlepage.html"
 CONTENT_FILENAME = "content.opf"
 CONTAINER_PATH = "META-INF/container.xml"
+MIMETYPE_FILENAME = "mimetype"
+TOC_FILENAME = "toc.ncx"
 
 CONTENT_TEMPLATE_FILE = "content.tpl"
 META_TEMPLATE_FILE = "meta.tpl"
 TITLE_TEMPLATE_FILE = "title.tpl"
+TOC_TEMPLATE_FILE = "toc.tpl"
+TOC_NAV_POINT_TEMPLATE_FILE = "nav_point.tpl"
 
 # Other stuff
 def get_image_size(imagepath):
@@ -119,11 +123,13 @@ class EpubWriter:
                 epub.path, mode=mode, 
                 compression=zipfile.ZIP_STORED)
     
+    
     def add_chapter(self, title, text):
         """Adds a chapter to the ePub"""
         self.file.writestr(title, text)
         self.source.index.append(title)
         print("- Chapter added: {!r}".format(title))
+    
     
     def add_image(self, image_name, image_bytes):
         """Adds the given image to the ePub"""
@@ -133,6 +139,7 @@ class EpubWriter:
         self.file.writestr(image_name, image_bytes)
         print("- Image added: {!r}".format(image_name))
     
+    
     def add_cover(self, image_type, image_bytes):
         """Uses the given binary image data as the cover for the ePub"""
         image_type = image_type.replace(".", "")  # Ensure proper endings (/bad memory)
@@ -141,6 +148,7 @@ class EpubWriter:
         self.source.cover_bytes = image_bytes
         self.source.cover_name = cover_name
         print("- Added cover")
+    
     
     def compile_title_page(self):
         """Compiles the title page for the ePub"""
@@ -152,6 +160,7 @@ class EpubWriter:
                 self.source.index.insert(0, TITLE_FILENAME)
         print("- Compiled title page")
     
+    
     def compile_index(self):
         """Compiles the index file for the ePub"""
         content = create_content_page(
@@ -160,10 +169,24 @@ class EpubWriter:
         self.file.writestr(CONTENT_FILENAME, content)
         print("- Compiled index file")
     
+    
+    def compile_toc(self):
+        """Compiles a .ncx table of content for the ePub"""
+        toc_template = quick_load(TOC_TEMPLATE_FILE)
+        nav_point_template = quick_load(TOC_NAV_POINT_TEMPLATE_FILE)
+        text = toc_template.format_map({
+            "title": self.source.title,
+            "nav_points": nav_points_text,
+        })
+        self.file.writestr(TOC_FILENAME, text)
+    
+    
     def compile_meta(self):
         """Adds the META-INF pointer file"""
         self.file.writestr(CONTAINER_PATH, quick_load(META_TEMPLATE_FILE))
+        self.file.writestr(MIMETYPE_FILENAME, "application/epub+zip")
         print("- Compiled metadata pointer file")
+    
     
     def close(self):
         """Compiles the index and meta files and closes the underlying archive"""

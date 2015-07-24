@@ -40,7 +40,7 @@ def create_epub_from_images(title, *image_paths, author=DEFAULT_AUTHOR):
         """Iterates over the images and creates chapters pointing to the images"""
         for image_path in image_paths:
             name = os.path.basename(image_path)
-            title = name.rsplit(".")[0]
+            title = name.rsplit(".", 1)[0]
             try:
                 width, height = get_image_size(image_path)
             except OSError:

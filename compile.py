@@ -37,6 +37,20 @@ def compile_epub(title, author, cover_type, cover_bytes, chapters, images=[], pa
 
     print("Done!")
     print("Saved ePub to {!r}".format(path))
+    
+
+def get_local(*path):
+    """Returns the given path relative to the location of this script"""
+    return os.path.join(os.path.dirname(__file__), os.path.join(*path))
+
+
+def quick_load(*path):
+    """Loads the text of a local file and closes it again"""
+    fpath = get_local(*path)
+    with open(fpath) as f:
+        text = f.read()
+    return text
+    
 
 # Make images downloaded through a Danish firefox version point locally
 _pattern = re.compile(r'"[^"]*?-filer\/(.*?)"')
@@ -72,7 +86,7 @@ def split_and_compile(source_text, chapter_name):
                 lines.append(markdown.markdown(line))
             line_started = True
 
-        template = "<html><head></head><body>\n{}\n</body></html>"
+        template = quick_load("markdown.tpl")
         html = template.format("\n".join(lines))
         yield (name, html)
         after_first_chapter = True
