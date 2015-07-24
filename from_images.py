@@ -60,7 +60,7 @@ def create_epub_from_images(title, *image_paths, author=DEFAULT_AUTHOR):
 
     compile_epub(
         title, author, cover_type, cover_bytes, iter_chapters(), 
-        images=iter_images(), path=None, metadata=metadata})
+        images=iter_images(), path=None, metadata=metadata)
 
 
 def create_epub_from_folder(folder):
@@ -74,10 +74,11 @@ def create_epub_from_folder(folder):
 
 def main(args=sys.argv[1:]):
     """Entry point"""
-    #parser = argparse.ArgumentParser()
-
-    #parsed = parser.parse_args(args)
-    create_epub_from_folder("/Users/jakoblautrupnysom/Documents/Personlig/Odd/vacation")
+    description = "Creates an ePub file from the images in the given folder"
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("folder")
+    parsed = parser.parse_args(args)
+    create_epub_from_folder(parsed.folder)
 
 if __name__ == '__main__':
     main()

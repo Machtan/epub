@@ -1,0 +1,22 @@
+# =====================================
+# Example of a specfile of an ePub book
+# =====================================
+
+# Specification file for the compilation of an epub
+
+title 		 = "Test book"
+author 		 = "Jakob Lautrup Nysom"
+cover_file 	 = "test_cover.png"
+source_files = ["test_source.md",]
+
+# Optional
+language	= "en"
+series		= "Test series"
+volume		= 1
+tags		= ["Horror", "Heartwarming", "Random",]
+description = "A book about the horrors related to testing of computer programs"
+
+# image_folders = ["folder_with_lots_of_images_to_include_automatically",]
+
+[image_files]
+image1 = "test_cover.png"
