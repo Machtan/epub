@@ -19,6 +19,8 @@ META_TEMPLATE_FILE = "meta.tpl"
 TITLE_TEMPLATE_FILE = "title.tpl"
 TOC_TEMPLATE_FILE = "toc.tpl"
 TOC_NAV_POINT_TEMPLATE_FILE = "nav_point.tpl"
+MANIFEST_ITEM_TEMPLATE_FILE = "manifest_item.tpl"
+SPINE_ITEM_TEMPLATE_FILE = "spine_item.tpl"
 
 # Other stuff
 def get_image_size(imagepath):
@@ -67,8 +69,8 @@ def create_content_page(title, cover_file_name, author, spine, metadata={}):
     spine: A list of the files in the finished epub
     directory: Where to put everything
     """
-    manifest_template = """<item href='{0}' id='{1}' media-type='{2}'/>"""
-    spine_template = """<itemref idref='{0}'/>"""
+    manifest_template = quick_load(MANIFEST_ITEM_TEMPLATE_FILE)
+    spine_template = quick_load(SPINE_ITEM_TEMPLATE_FILE)
     
     # Add optional meta information :)
     meta_lines = []
@@ -82,20 +84,30 @@ def create_content_page(title, cover_file_name, author, spine, metadata={}):
     manifest_lines = []
     
     covertype = cover_file_name.split(".")[-1]
-    cover_text = manifest_template.format(
-        cover_file_name, "cover", "image/"+covertype)
+    cover_text = manifest_template.format_map({
+        "url": cover_file_name, 
+        "id": "cover", 
+        "media_type": "image/"+covertype
+    })
     manifest_lines.append(cover)
     
     spine_lines = []
-    splat = author.split(" ")
-    authorformat = splat[-1]+","+" ".join(splat[:-1])
-    for num, item in enumerate(spine):
-        manifest_lines.append(
-            manifest_template.format(item, num, "application/xhtml+xml"))
+    first_names, last_name = author.rsplit(" ", 1)
+    authorformat = last_name + "," + first_names
+    for num, chapter in enumerate(spine):
+        chapter = manifest_template.format_map({
+            "url": item, 
+            "id": num, 
+            "media_type": "application/xhtml+xml"
+        })
+        manifest_lines.append(chapter)
         spine_lines.append(spine_template.format(num))
     
-    toc_text = mainfest_template.format(
-        "toc.ncx", "ncx", "application/x-dtbncx+xml")
+    toc_text = manifest_template.format_map({
+        "url": "toc.ncx", 
+        "id": "ncx", 
+        "media_type": "application/x-dtbncx+xml"
+    })
     
     spine_text = "\n".join(spine_lines)
     manifest = "\n".join(manifest_lines)
