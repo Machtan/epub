@@ -63,12 +63,13 @@ description_file = "Arifureta description.txt"
 
 """
 
-
+# Make images downloaded through a Danish firefox version point locally
 _pattern = re.compile(r'"[^"]*?-filer\/(.*?)"')
 _replacer = lambda m: '"{}"'.format(m.groups(1)[0])
 def clean_html(html):
     """Cleans up file references in downloaded pages"""
     return _pattern.sub(_replacer, html)
+
 
 def split_and_compile(source_text, chapter_name):
     """Splits the source text into chapters and compiles each to html from
@@ -103,6 +104,7 @@ def split_and_compile(source_text, chapter_name):
 
     raise StopIteration
 
+
 def load_source_text(path):
     """Loads the text in the given source as utf-8"""
     with open(path, "rb") as f:
@@ -114,50 +116,22 @@ def load_source_text(path):
         return str(source, encoding=encoding)
 
 
-def create_parts(source_text, path, text_is_html):
-    """Creates the chapters for a given source text, by either compiling it
-    (if it is my blend of markdown) or cleaning it if it is HTML already"""
-    chapter_name = os.path.basename(path).split(".")[0]
-    if not text_is_html:
-        print(": text is html : FALSE")
-        return split_and_compile(source_text, chapter_name)
-    else:
-        print(": text is html : TRUE")
-        text = clean_html(source_text)
-        return [(chapter_name, text)]
-
-
-def get_chapters(source_paths, source_is_html):
+def load_chapters(source_paths, source_is_html):
+    """Returns the chapter tuples from loading the given text source paths.
+    source_is_html toggles whether to interpret the text contents as html 
+    or compile from them as markdown"""
     for path in source_paths:
         source_text = load_source_text(path)
         text_is_html = source_is_html or (source_text[:6] == "<html>")
-        text_parts = create_parts(source_text, path, text_is_html)
-
-
-def add_images(images, image_folders, get_local_to_spec, zfile):
-    """Adds images to the ePub from the given dict and folders.
-    get_local_to_spec is the function of the same name"""
-    # - Add the images from the given image folders
-    endings = (".png", ".jpg", ".jpeg", ".svg", ".bmp", ".gif")
-    def is_image(name):
-        return (not name.startswith(".")) and name.lower().endswith(endings)
-
-    for folder in image_folders:
-        for dirpath, _, filenames in os.walk(folder):
-            for filename in (f for f in filenames if is_image(f)):
-                if filename not in images:
-                    filepath = os.path.abspath(os.path.join(dirpath, filename))
-                    images[filename] = filepath
-                else:
-                    print("! Duplicate image found: {!r}".format(filename))
-
-    # - Add the separately specified images
-    for image_file, local_name in images.items():
-        path = get_local_to_spec(local_name)
-        with open(path, "rb") as f:
-            zfile.writestr(image_file, f.read())
-        print("- Moved image '{}'".format(image_file))
-
+        chapter_name = os.path.basename(path).split(".")[0]
+        if not text_is_html:
+            print(": text is html : FALSE")
+            yield from split_and_compile(source_text, chapter_name)
+        else:
+            print(": text is html : TRUE")
+            text = clean_html(source_text)
+            yield (chapter_name, text)
+    raise StopIteration
 
 
 def compile_epub(spec_dict, directory, target_path=None, source_is_html=False):
@@ -171,13 +145,39 @@ def compile_epub(spec_dict, directory, target_path=None, source_is_html=False):
 
     title = spec_dict['title']
     author = spec_dict['author']
-    images = spec_dict.get("image_files", {})
-    image_folders = spec_dict.get("image_folders", [])
-    cover_path = get_local_to_spec(spec_dict['cover_file'])
-    source_paths = [get_local_to_spec(f) for f in spec_dict['source_files']]
     
     if not target_path:
         target_path = get_local_to_spec(title + " - " + author + ".epub")
-
+    
+    # Cover
+    cover_path = get_local_to_spec(spec_dict['cover_file'])
+    cover_type = cover_path.rsplit(".", 1)[-1]
+    with open(cover_path, "rb") as f:
+        cover_bytes = f.read()
+    
+    # Chapters
+    source_paths = [get_local_to_spec(f) for f in spec_dict['source_files']]
+    chapters = load_chapters(source_paths, source_is_html)
+    
+    # Images
+    images = spec_dict.get("image_files", {})
+    
+    endings = (".png", ".jpg", ".jpeg", ".svg", ".bmp", ".gif")
+    def is_image(name):
+        return (not name.startswith(".")) and name.lower().endswith(endings)
+    
+    for folder in spec_dict.get("image_folders", []):
+        for dirpath, _, filenames in os.walk(folder):
+            for filename in (f for f in filenames if is_image(f)):
+                if filename not in images:
+                    filepath = os.path.abspath(os.path.join(dirpath, filename))
+                    images[filename] = filepath
+                else:
+                    print("! Duplicate image found: {!r}".format(filename))
+    
+    compile_epub_with_items(
+        title, author, cover_type, cover_bytes, chapters, images=images, 
+        path=target_path, metadata=spec_dict)
+    
 if __name__ == '__main__':
     print(create_content_page("derp", "hello.png", "world", ["a", "b"], {"description": "Some Crap I Found"}))
