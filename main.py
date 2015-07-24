@@ -20,9 +20,6 @@ def main(args=sys.argv[1:]):
         "-t", "--target_path", default=None,
         help="A specific path to compile the ePub to")
     parser.add_argument(
-        "-a", "--assume_html", default=False,
-        help="Don't try to compile any of the text source files")
-    parser.add_argument(
         "-r", "--raw_spec", default=False,
         help="Interpret the spec_file argument as the contents of the\
         specification file, instead of the path to it")
@@ -39,8 +36,7 @@ def main(args=sys.argv[1:]):
     directory = os.path.dirname(os.path.abspath(spec_file))
 
     compile_epub_from_specification(
-        spec, directory, target_path=parsed.target_path,
-        source_is_html=parsed.assume_html)
+        spec, directory, target_path=parsed.target_path)
 
 
 if __name__ == '__main__':

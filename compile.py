@@ -67,7 +67,7 @@ def split_and_compile(source_text, chapter_name):
     # All this splitting makes it slow :c
     after_first_chapter = False
     for num, text in enumerate(source_text.split("\n# ")):
-        name = "{}_split-{}.html".format(chapter_name, num)
+        name = "{}-{}.html".format(chapter_name, num)
         #print("- Writing '{}'".format(name))
         lines = []
 
@@ -111,15 +111,16 @@ def iter_load_chapters(source_paths, source_is_html):
     or compile from them as markdown"""
     for path in source_paths:
         source_text = load_source_text(path)
-        text_is_html = source_is_html or (source_text[:6] == "<html>")
-        chapter_name = os.path.basename(path).split(".")[0]
-        if not text_is_html:
-            print(": text is html : FALSE")
-            yield from split_and_compile(source_text, chapter_name)
-        else:
-            print(": text is html : TRUE")
+        text_is_html = 
+        chapter_name = os.path.basename(path).rsplit(".", 1)[0]
+        if path.endswith((".html", ".xhtml")):
             text = clean_html(source_text)
             yield (chapter_name, text)
+        elif path.endswith(".md"):
+            yield from split_and_compile(source_text, chapter_name)
+        else:
+            yield (chapter_name, text)
+
     raise StopIteration
 
 
@@ -149,7 +150,7 @@ def iter_load_images(images, image_folders=[]):
     raise StopIteration
 
 
-def compile_epub_from_specification(spec_dict, directory, target_path=None, source_is_html=False):
+def compile_epub_from_specification(spec_dict, directory, target_path=None):
     """# Compiles an ebook in the ePub format from the given specification file
     # =============================================================
     # Example of a specification file for a book in the ePub format
@@ -160,7 +161,7 @@ def compile_epub_from_specification(spec_dict, directory, target_path=None, sour
     title 		 = "Test book"
     author 		 = "Jakob Lautrup Nysom"
     cover_file 	 = "test_cover.png"
-    source_files = ["test_source.md",]
+    source_files = ["test_source.md", "test_image_page.html"]
 
     # Optional
     language	= "en"
