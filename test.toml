@@ -7,7 +7,7 @@
 title 		 = "Test book"
 author 		 = "Jakob Lautrup Nysom"
 cover_file 	 = "test_cover.png"
-source_files = ["test_source.md", "test_image_page.html"]
+source_files = ["test_source.md", "Image Test.html"]
 
 # Optional
 language	= "en"

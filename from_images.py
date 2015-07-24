@@ -78,6 +78,7 @@ def create_epub_from_folder(folder):
     title = os.path.basename(folder)
     create_epub_from_images(title, *images)
 
+
 def main(args=sys.argv[1:]):
     """Entry point"""
     description = "Creates an ePub file from the images in the given folder"

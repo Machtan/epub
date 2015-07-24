@@ -85,7 +85,7 @@ def create_content_page(title, cover_file_name, author, chapters, images, metada
     spine_lines = []
     
     def add_manifest(item_id, url, media_type):
-        text = manifest.template.format_map({
+        text = manifest_template.format_map({
             "id": item_id,
             "url": url,
             "media_type": media_type,
@@ -154,38 +154,35 @@ class EpubWriter:
                 compression=zipfile.ZIP_STORED)
     
     
-    def add_chapter(self, local_id, local_file, text):
+    def add_chapter(self, title, local_file, text):
         """Adds a chapter to the ePub"""
         self.file.writestr(local_file, text)
-        self.source.chapters.append((local_id, local_file))
+        self.source.chapters.append((title, local_file))
         print("- Chapter added: {!r}".format(title))
     
     
-    def add_image(self, local_id, local_file, image_bytes):
+    def add_image(self, title, local_file, image_bytes):
         """Adds the given image to the ePub"""
         if not isinstance(image_bytes, bytes):
             raise Exception("Image bytes should be 'bytes' not a {}".format(
                 type(image_bytes)))
         self.file.writestr(local_file, image_bytes)
-        self.source.images.append((local_id, local_file))
-        print("- Image added: {!r}".format(image_name))
+        self.source.images.append((title, local_file))
+        print("- Image added: {!r}".format(title))
     
     
     def add_cover(self, image_type, image_bytes):
         """Uses the given binary image data as the cover for the ePub"""
-        image_type = image_type.replace(".", "")  # Ensure proper endings (/bad memory)
-        cover_file = "cover.{}".format(image_type)
+        cover_file = "cover.{}".format(image_type.replace(".", ""))
         self.add_image("cover", cover_file, image_bytes)
         self.source.cover_bytes = image_bytes
-        self.source.cover_file = cover_file
         print("- Added cover")
     
     
     def compile_title_page(self):
         """Compiles the title page for the ePub"""
         if self.source.cover_bytes:
-            title_content = create_title_page(
-                self.source.cover_name, self.source.cover_bytes)
+            title_content = create_title_page(self.source.cover_bytes)
             self.file.writestr(TITLE_FILENAME, title_content)
         print("- Compiled title page")
     
@@ -199,16 +196,21 @@ class EpubWriter:
         print("- Compiled index file")
     
     
-    def compile_toc(self):
+    def compile_table_of_contents(self):
         """Compiles a .ncx table of content for the ePub"""
         toc_template = quick_load(TOC_TEMPLATE_FILE)
         nav_point_template = quick_load(TOC_NAV_POINT_TEMPLATE_FILE)
         nav_points = []
-        for num, chapter in enumerate(self.source.index[1:], 1):
+        nav_points.append(nav_point_template.format_map({
+            "number": 1,
+            "chapter": "Cover",
+            "chapter_file": TITLE_FILENAME,
+        }))
+        for num, (title, filename) in enumerate(self.source.chapters, 2):
             nav_points.append(nav_point_template.format_map({
                 "number": num,
-                "chapter": chapter.rsplit(".", 1)[0],
-                "chapter_file": chapter,
+                "chapter": title,
+                "chapter_file": filename,
             }))
         text = toc_template.format_map({
             "title": self.source.title,
@@ -230,5 +232,5 @@ class EpubWriter:
         self.compile_title_page()
         self.compile_index()
         self.compile_meta()
-        self.compile_toc()
+        self.compile_table_of_contents()
         self.file.close()

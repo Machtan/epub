@@ -9,7 +9,7 @@ class Epub:
     """An EPub file"""
     def __init__(
             self, title, author, path, cover_type=None, cover_bytes=bytes(), 
-            chapters=[], images=set(), metadata={}):
+            chapters=[], images=[], metadata={}):
         """Creates a new ePub with the given parameters. Use 'load' for existing files."""
         self.path = path
         self.title = title
