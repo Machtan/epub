@@ -60,7 +60,8 @@ def compile_epub_from_images(title, author, path, *image_paths):
         """Iterates over the images and creates chapters pointing to the images"""
         for image_path in image_paths:
             filename = os.path.basename(image_path)
-            title = filename.rsplit(".", 1)[0]
+            title = "page_" + filename.rsplit(".", 1)[0]
+            chapter_file = title + ".html"
             try:
                 width, height = get_image_size(image_path)
             except OSError:
@@ -68,9 +69,10 @@ def compile_epub_from_images(title, author, path, *image_paths):
                 continue
             text = chapter_template.format_map({
                 "title": title,
-                "filename": filename
+                "filename": filename,
             })
-            yield (title, filename, text)
+            # print("Chapter: {!r} | {!r}".format(title, chapter_file))
+            yield (title, chapter_file, text)
         
         raise StopIteration
     
