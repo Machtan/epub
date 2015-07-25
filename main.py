@@ -10,7 +10,10 @@ from compile import compile_epub_from_specification
 
 def main(args=sys.argv[1:]):
     """Entry point"""
-    description = "Compiles an ePub from a markdown source and a TOML specification"
+    description = """Compiles an ePub from a markdown source and a TOML specification.
+The files in the specification are sought relatively to the location of the specification 
+file, so use absolute paths when needed.
+If no arguments are given, the created file will be found in the active working directory."""
     parser = ArgumentParser(description=description)
 
     parser.add_argument(
@@ -18,7 +21,8 @@ def main(args=sys.argv[1:]):
         help="The spec of the book!")
     parser.add_argument(
         "-t", "--target_path", default=None,
-        help="A specific path to compile the ePub to")
+        help="""A specific path to compile the ePub to. Defaults to a name/author coupling
+in the current working directory""")
     parser.add_argument(
         "-r", "--raw_spec", default=False,
         help="Interpret the spec_file argument as the contents of the\

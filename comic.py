@@ -1,5 +1,9 @@
 # encoding: utf-8
 # Created by Jabok @ Thursday July 24th 2015
+"""
+Library and command-line for the creation of ePub books from a set of images,
+eg. loaded from a folder
+"""
 import os
 import sys
 import argparse

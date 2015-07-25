@@ -204,7 +204,7 @@ def compile_epub_from_specification(spec_dict, directory, target_path=None):
     author = spec_dict['author']
     
     if not target_path:
-        target_path = get_local_to_spec(title + " - " + author + ".epub")
+        target_path = os.path.abspath("{} - {}.epub".format(title, author))
     
     # Cover
     cover_path = get_local_to_spec(spec_dict['cover_file'])
