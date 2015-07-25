@@ -8,7 +8,7 @@ from PIL import Image
 
 
 # Globals
-TITLE_FILENAME = "titlepage.html"
+TITLE_FILENAME = "titlepage.xhtml"
 CONTENT_FILENAME = "content.opf"
 CONTAINER_PATH = "META-INF/container.xml"
 MIMETYPE_FILENAME = "mimetype"
@@ -46,6 +46,16 @@ def read_description(file):
     with open(file) as f:
         text = f.read()
     return text
+
+
+_type_map = {
+    "jpg": "jpeg",
+    "JPEG": "jpeg",
+}
+def get_image_type(filename):
+    """Returns the media-type of the given image ending"""
+    ending = filename.rsplit(".", 1)[-1]
+    return "image/" + _type_map.get(ending, ending)
 
 
 _meta_map = {
@@ -96,7 +106,7 @@ def create_content_page(title, cover_file_name, author, chapters, images, metada
         text = spine_template.format_map({"id": item_id})
         spine_lines.append(text)
     
-    cover_type = "image/" + cover_file_name.rsplit(".", 1)[-1]
+    cover_type = get_image_type(cover_file_name)
     add_manifest("cover", cover_file_name, cover_type)
     
     add_manifest("title", TITLE_FILENAME, "application/xhtml+xml")
@@ -107,7 +117,7 @@ def create_content_page(title, cover_file_name, author, chapters, images, metada
         add_spine(local_id)
     
     for (local_id, local_file) in images:
-        image_type = "image/" + local_file.rsplit(".", 1)[-1]
+        image_type = get_image_type(local_file)
         add_manifest(local_id, local_file, image_type)
     
     add_manifest("ncx", "toc.ncx", "application/x-dtbncx+xml")
@@ -115,8 +125,12 @@ def create_content_page(title, cover_file_name, author, chapters, images, metada
     spine = "\n".join(spine_lines)
     manifest = "\n".join(manifest_lines)
     
-    first_names, last_name = author.rsplit(" ", 1)
-    authorformat = last_name + "," + first_names
+    split_name = author.rsplit(" ", 1)
+    if len(split_name) > 1:
+        first_names, last_name = split_name
+        authorformat = "{},{}".format(last_name, first_names)
+    else:
+        authorformat = author
     
     # Format everything :D
     content_template = quick_load(CONTENT_TEMPLATE_FILE)
@@ -131,12 +145,17 @@ def create_content_page(title, cover_file_name, author, chapters, images, metada
     return content
 
 
-def create_title_page(cover_bytes):
+def create_title_page(cover_bytes, cover_file):
     """Creates a html title page based on the given cover image"""
     template = quick_load(TITLE_TEMPLATE_FILE)
     image = Image.open(io.BytesIO(cover_bytes))
-    w, h = image.size
-    return template.format(w, h)
+    width, height = image.size
+    text = template.format_map({
+        "width": width, 
+        "height": height, 
+        "filename": cover_file
+    })
+    return text
 
 
 class EpubWriter:
@@ -176,13 +195,15 @@ class EpubWriter:
         cover_file = "cover.{}".format(image_type.replace(".", ""))
         self.add_image("cover", cover_file, image_bytes)
         self.source.cover_bytes = image_bytes
+        self.source.cover_file = cover_file
         print("- Added cover")
     
     
     def compile_title_page(self):
         """Compiles the title page for the ePub"""
         if self.source.cover_bytes:
-            title_content = create_title_page(self.source.cover_bytes)
+            title_content = create_title_page(
+                self.source.cover_bytes, self.source.cover_file)
             self.file.writestr(TITLE_FILENAME, title_content)
         print("- Compiled title page")
     

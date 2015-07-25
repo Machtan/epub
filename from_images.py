@@ -9,7 +9,7 @@ from PIL import Image
 from compile import compile_epub
 import friendlytoml as toml
 
-
+IMAGE_PAGE_TEMPLATE_FILE = "image_page.tpl"
 DEFAULT_AUTHOR = os.environ.get("USER", "Unknown author")
 
 
@@ -19,12 +19,15 @@ def get_image_size(imagepath):
     return img.size
 
 
-def create_epub_from_images(title, *image_paths, author=DEFAULT_AUTHOR):
+def create_epub_from_images(title, author, *image_paths):
     """Creates an ePub from the given list of image files"""
     if not image_paths:
         raise Exception("No images provided!")
     
-    with open("title.tpl") as f:
+    if author is None:
+        author = DEFAULT_AUTHOR
+    
+    with open(IMAGE_PAGE_TEMPLATE_FILE) as f:
         chapter_template = f.read()
     
     
@@ -49,8 +52,11 @@ def create_epub_from_images(title, *image_paths, author=DEFAULT_AUTHOR):
             except OSError:
                 print("Error reading image: {!r}".format(image_path))
                 continue
-                
-            yield (title, filename, chapter_template.format(width, height, name))
+            text = chapter_template.format_map({
+                "title": title,
+                "filename": filename
+            })
+            yield (title, filename, text)
         
         raise StopIteration
     
@@ -69,14 +75,24 @@ def create_epub_from_images(title, *image_paths, author=DEFAULT_AUTHOR):
         images=iter_images(), path=None, metadata=metadata)
 
 
-def create_epub_from_folder(folder):
+def create_epub_from_folder(folder, title=None, author=None):
     """Creates an ePub from the image files contained in the given folder"""
     endings = (".png", ".jpg", ".jpeg", ".svg", ".bmp", ".gif")
     def is_image(name):
         return (not name.startswith(".")) and name.lower().endswith(endings)
-    images = (os.path.join(folder, x) for x in os.listdir(folder) if is_image(x))
-    title = os.path.basename(folder)
-    create_epub_from_images(title, *images)
+    
+    def key(path):
+        "(ischar, numval, strval)"
+        name = os.path.basename(path).rsplit(".", 1)[0]
+        if name.isdigit():
+            return (0, int(name), name)
+        else:
+            return (1, 0, name)
+    
+    files = [os.path.join(folder, x) for x in os.listdir(folder) if is_image(x)]
+    images = sorted(files, key=key)
+    title = title if title else os.path.basename(folder)
+    create_epub_from_images(title, author, *images)
 
 
 def main(args=sys.argv[1:]):
@@ -84,8 +100,10 @@ def main(args=sys.argv[1:]):
     description = "Creates an ePub file from the images in the given folder"
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("folder")
+    parser.add_argument("-t", "--title", default=None)
+    parser.add_argument("-a", "--author", default=None)
     parsed = parser.parse_args(args)
-    create_epub_from_folder(parsed.folder)
+    create_epub_from_folder(parsed.folder, title=parsed.title, author=parsed.author)
 
 if __name__ == '__main__':
     main()

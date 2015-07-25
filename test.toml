@@ -7,7 +7,12 @@
 title 		 = "Test book"
 author 		 = "Jakob Lautrup Nysom"
 cover_file 	 = "test_cover.png"
-source_files = ["test_source.md", "Image Test.html"]
+source_files = [
+    "test_source.md", 
+    "Image Test.html", 
+    "Other Image Test.html", 
+    "Old Other Image Test.html"
+]
 
 # Optional
 language	= "en"
@@ -20,3 +25,4 @@ description = "A book about the horrors related to testing of computer programs"
 
 [image_files]
 image1 = "test_cover.png"
+image2 = "test_image.jpg"
