@@ -13,6 +13,19 @@ from spec_validator import validate_spec
 from epub import Epub
 
 
+def get_local(*path):
+    """Returns the given path relative to the location of this script"""
+    return os.path.join(os.path.dirname(__file__), os.path.join(*path))
+
+
+def template(*path):
+    return get_local("templates", *path) 
+    
+
+# Globals
+MARKDOWN_TEMPLATE_FILE = template("markdown.tpl")
+
+
 def compile_epub(title, author, cover_type, cover_bytes, chapters, images=[], path=None, metadata={}):
     """Compiles an ePub from the given arguments.
     The path is where the ePub should be saved to 
@@ -88,7 +101,7 @@ def split_and_compile(source_text):
                 lines.append(markdown.markdown(line))
             line_started = True
 
-        template = quick_load("markdown.tpl")
+        template = quick_load(MARKDOWN_TEMPLATE_FILE)
         html = template.format_map({"text": "\n".join(lines)})
         yield (chapter_name, name, html)
         after_first_chapter = True
@@ -107,11 +120,11 @@ def load_source_text(path):
         return str(source, encoding=encoding)
 
 
-def iter_load_chapters(source_paths):
+def iter_load_chapters(directory, source_paths):
     """Yields the chapter tuples from loading the given text source paths.
     source_is_html toggles whether to interpret the text contents as html 
     or compile from them as markdown"""
-    for path in source_paths:
+    for path in (os.path.join(directory, p) for p in source_paths):
         source_text = load_source_text(path)
         base = os.path.basename(path)
         name = base.rsplit(".", 1)[0]
@@ -126,20 +139,21 @@ def iter_load_chapters(source_paths):
     raise StopIteration
 
 
-def iter_load_images(images, image_folders=[]):
+def iter_load_images(directory, images, image_folders=[]):
     """Loads and iterates over the images from the images and image folders 
     parts of the ePub specification file"""
     endings = (".png", ".jpg", ".jpeg", ".svg", ".bmp", ".gif")
     def is_image(name):
         return (not name.startswith(".")) and name.lower().endswith(endings)
     
-    for name, path in images.items():
+    for name, relative_path in images.items():
+        path = os.path.join(directory, relative_path)
         filename = os.path.basename(path)
         with open(path, "rb") as f:
             contents = f.read()
         yield (name, filename, contents)
         
-    for folder in image_folders:
+    for folder in (os.path.join(directory, f) for f in image_folders):
         for dirpath, _, filenames in os.walk(folder):
             for filename in (f for f in filenames if is_image(f)):
                 if filename not in images:
@@ -200,10 +214,11 @@ def compile_epub_from_specification(spec_dict, directory, target_path=None):
     
     # Chapters
     files = (get_local_to_spec(f) for f in spec_dict['source_files'])
-    chapters = iter_load_chapters(files)
+    chapters = iter_load_chapters(directory, files)
     
     # Images
     images = iter_load_images(
+        directory,
         spec_dict.get("image_files", {}), 
         image_folders=spec_dict.get("image_folders", []))
     
@@ -211,6 +226,3 @@ def compile_epub_from_specification(spec_dict, directory, target_path=None):
     compile_epub(
         title, author, cover_type, cover_bytes, chapters, images=images, 
         path=target_path, metadata=spec_dict)
-    
-if __name__ == '__main__':
-    pass

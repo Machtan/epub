@@ -7,6 +7,13 @@ import io
 from PIL import Image
 
 
+def get_local(*path):
+    """Returns the given path relative to the location of this script"""
+    return os.path.join(os.path.dirname(__file__), os.path.join(*path))
+
+def template(*path):
+    return get_local("templates", *path)    
+
 # Globals
 TITLE_FILENAME = "titlepage.xhtml"
 CONTENT_FILENAME = "content.opf"
@@ -14,24 +21,19 @@ CONTAINER_PATH = "META-INF/container.xml"
 MIMETYPE_FILENAME = "mimetype"
 TOC_FILENAME = "toc.ncx"
 
-CONTENT_TEMPLATE_FILE = "content.tpl"
-META_TEMPLATE_FILE = "meta.tpl"
-TITLE_TEMPLATE_FILE = "title.tpl"
-TOC_TEMPLATE_FILE = "toc.tpl"
-TOC_NAV_POINT_TEMPLATE_FILE = "nav_point.tpl"
-MANIFEST_ITEM_TEMPLATE_FILE = "manifest_item.tpl"
-SPINE_ITEM_TEMPLATE_FILE = "spine_item.tpl"
+CONTENT_TEMPLATE_FILE = template("content.tpl")
+META_TEMPLATE_FILE = template("meta.tpl")
+TITLE_TEMPLATE_FILE = template("title.tpl")
+TOC_TEMPLATE_FILE = template("toc.tpl")
+TOC_NAV_POINT_TEMPLATE_FILE = template("nav_point.tpl")
+MANIFEST_ITEM_TEMPLATE_FILE = template("manifest_item.tpl")
+SPINE_ITEM_TEMPLATE_FILE = template("spine_item.tpl")
 
 # Other stuff
 def get_image_size(imagepath):
     """Returns the size of the given image"""
     img = Image.open(imagepath)
     return img.size
-
-
-def get_local(*path):
-    """Returns the given path relative to the location of this script"""
-    return os.path.join(os.path.dirname(__file__), os.path.join(*path))
 
 
 def quick_load(*path):

@@ -9,7 +9,17 @@ from PIL import Image
 from compile import compile_epub
 import friendlytoml as toml
 
-IMAGE_PAGE_TEMPLATE_FILE = "image_page.tpl"
+
+def get_local(*path):
+    """Returns the given path relative to the location of this script"""
+    return os.path.join(os.path.dirname(__file__), os.path.join(*path))
+
+
+def template(*path):
+    return get_local("templates", *path)    
+    
+
+IMAGE_PAGE_TEMPLATE_FILE = template("image_page.tpl")
 DEFAULT_AUTHOR = os.environ.get("USER", "Unknown author")
 
 
