@@ -33,7 +33,7 @@ def get_image_size(imagepath):
     return img.size
 
 
-def create_epub_from_images(title, author, *image_paths):
+def compile_epub_from_images(title, author, path, *image_paths):
     """Creates an ePub from the given list of image files"""
     if not image_paths:
         raise Exception("No images provided!")
@@ -86,10 +86,10 @@ def create_epub_from_images(title, author, *image_paths):
 
     compile_epub(
         title, author, cover_type, cover_bytes, iter_chapters(), 
-        images=iter_images(), path=None, metadata=metadata)
+        images=iter_images(), path=path, metadata=metadata)
 
 
-def create_epub_from_folder(folder, title=None, author=None):
+def compile_epub_from_folder(folder, title=None, author=None, path=None):
     """Creates an ePub from the image files contained in the given folder"""
     endings = (".png", ".jpg", ".jpeg", ".svg", ".bmp", ".gif")
     def is_image(name):
@@ -106,18 +106,4 @@ def create_epub_from_folder(folder, title=None, author=None):
     files = [os.path.join(folder, x) for x in os.listdir(folder) if is_image(x)]
     images = sorted(files, key=key)
     title = title if title else os.path.basename(folder)
-    create_epub_from_images(title, author, *images)
-
-
-def main(args=sys.argv[1:]):
-    """Entry point"""
-    description = "Creates an ePub file from the images in the given folder"
-    parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("folder")
-    parser.add_argument("-t", "--title", default=None)
-    parser.add_argument("-a", "--author", default=None)
-    parsed = parser.parse_args(args)
-    create_epub_from_folder(parsed.folder, title=parsed.title, author=parsed.author)
-
-if __name__ == '__main__':
-    main()
+    compile_epub_from_images(title, author, path, *images)
