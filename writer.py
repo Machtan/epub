@@ -9,7 +9,7 @@ from PIL import Image
 
 def get_local(*path):
     """Returns the given path relative to the location of this script"""
-    return os.path.join(os.path.dirname(__file__), os.path.join(*path))
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.join(*path)))
 
 def template(*path):
     return get_local("templates", *path)    
@@ -36,14 +36,6 @@ def get_image_size(imagepath):
     return img.size
 
 
-def quick_load(*path):
-    """Loads the text of a local file and closes it again"""
-    fpath = get_local(*path)
-    with open(fpath) as f:
-        text = f.read()
-    return text
-
-
 def read_description(file):
     with open(file) as f:
         text = f.read()
@@ -60,7 +52,7 @@ def get_image_type(filename):
     return "image/" + _type_map.get(ending, ending)
 
 
-_meta_map = {
+_meta_handlers = {
     "series": lambda x: [
         "<meta name='calibre:series' content='{}'/>".format(x),
         "\n<dc:subject>Series</dc:subject>"],
@@ -75,20 +67,36 @@ _meta_map = {
     "tags": lambda tags: [
         "<dc:subject>{}</dc:subject>".format(tag) for tag in tags]
 }
-def create_content_page(title, cover_file_name, author, chapters, images, metadata={}):
+
+
+_default_metadata = {
+    "language": "en",
+    "description": "This item has no designated description ;)",
+}
+
+def create_content_page(title, cover_file_name, author, chapters, images, metadata=None):
     """Creates the content.opf file of an epub book
     specs: The specification dictionary of the comic
     spine: A list of the files in the finished epub
     directory: Where to put everything
     """
-    manifest_template = quick_load(MANIFEST_ITEM_TEMPLATE_FILE)
-    spine_template = quick_load(SPINE_ITEM_TEMPLATE_FILE)
+    if metadata is None: metadata = {}
+    
+    with open(MANIFEST_ITEM_TEMPLATE_FILE) as f:
+        manifest_template = f.read()
+    
+    with open(SPINE_ITEM_TEMPLATE_FILE) as f:
+        spine_template = f.read()
     
     # Add optional meta information :)
     meta_lines = []
-    for item, handler in _meta_map.items():
-        if item in metadata:
-            meta_lines += handler(metadata[item])
+    
+    combined_metadata = _default_metadata.copy()
+    combined_metadata.update(metadata)
+    
+    for meta_type, value in combined_metadata.items():
+        meta_lines += _meta_handlers[meta_type](value)
+    
     extrameta = "\n".join(meta_lines)
     
     # Throw together the manifest and spine
@@ -107,9 +115,6 @@ def create_content_page(title, cover_file_name, author, chapters, images, metada
     def add_spine(item_id):
         text = spine_template.format_map({"id": item_id})
         spine_lines.append(text)
-    
-    cover_type = get_image_type(cover_file_name)
-    add_manifest("cover", cover_file_name, cover_type)
     
     add_manifest("title", TITLE_FILENAME, "application/xhtml+xml")
     add_spine("title")
@@ -135,7 +140,9 @@ def create_content_page(title, cover_file_name, author, chapters, images, metada
         authorformat = author
     
     # Format everything :D
-    content_template = quick_load(CONTENT_TEMPLATE_FILE)
+    with open(CONTENT_TEMPLATE_FILE) as f:
+        content_template = f.read()
+    
     content = content_template.format(
         title=title,
         author=author,
@@ -149,7 +156,9 @@ def create_content_page(title, cover_file_name, author, chapters, images, metada
 
 def create_title_page(cover_bytes, cover_file):
     """Creates a html title page based on the given cover image"""
-    template = quick_load(TITLE_TEMPLATE_FILE)
+    with open(TITLE_TEMPLATE_FILE) as f:
+        template = f.read()
+    
     image = Image.open(io.BytesIO(cover_bytes))
     width, height = image.size
     text = template.format_map({
@@ -221,8 +230,12 @@ class EpubWriter:
     
     def compile_table_of_contents(self):
         """Compiles a .ncx table of content for the ePub"""
-        toc_template = quick_load(TOC_TEMPLATE_FILE)
-        nav_point_template = quick_load(TOC_NAV_POINT_TEMPLATE_FILE)
+        with open(TOC_TEMPLATE_FILE) as f:
+            toc_template = f.read()
+        
+        with open(TOC_NAV_POINT_TEMPLATE_FILE) as f:
+            nav_point_template = f.read()
+        
         nav_points = []
         nav_points.append(nav_point_template.format_map({
             "number": 1,
@@ -245,7 +258,10 @@ class EpubWriter:
     
     def compile_meta(self):
         """Adds the META-INF pointer file"""
-        self.file.writestr(CONTAINER_PATH, quick_load(META_TEMPLATE_FILE))
+        with open(META_TEMPLATE_FILE) as f:
+            meta_template = f.read()
+        
+        self.file.writestr(CONTAINER_PATH, meta_template)
         self.file.writestr(MIMETYPE_FILENAME, "application/epub+zip")
         print("- Compiled metadata pointer file")
     

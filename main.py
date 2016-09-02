@@ -4,7 +4,7 @@
 """Command-line utility for the ePub compilation library"""
 import os
 import sys
-import friendlytoml as toml
+import toml
 from argparse import ArgumentParser
 from compile import compile_epub_from_specification
 from comic import compile_epub_from_folder

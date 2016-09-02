@@ -11,7 +11,7 @@ import tempfile
 from PIL import Image
 
 from compile import compile_epub
-import friendlytoml as toml
+import toml
 
 
 def get_local(*path):
@@ -70,6 +70,8 @@ def compile_epub_from_images(title, author, path, *image_paths):
             text = chapter_template.format_map({
                 "title": title,
                 "filename": filename,
+                "width": width,
+                "height": height,
             })
             # print("Chapter: {!r} | {!r}".format(title, chapter_file))
             yield (title, chapter_file, text)
